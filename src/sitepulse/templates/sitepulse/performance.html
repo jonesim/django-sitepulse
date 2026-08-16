@@ -1,0 +1,19 @@
+{% extends "sitepulse/base.html" %}
+{% block content %}
+  <div class="sp-chip-row">
+    <a class="sp-chip{% if not route %} active{% endif %}" href="{{ clear_route }}">All routes</a>
+    {% for label, url, active in route_links %}
+      <a class="sp-chip{% if active %} active{% endif %}" href="{{ url }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  {{ trend }}
+  {{ histogram }}
+  <div class="sp-panel">
+    <h2 class="sp-figure-title">Slowest routes</h2>
+    <div class="sp-figure-note">
+      Sorted by p95 weighted by traffic, so a slow route nobody visits does not crowd out a
+      slightly-slow route everybody does. A high query count is usually an N+1.
+    </div>
+    <div class="sp-table-wrap">{{ table }}</div>
+  </div>
+{% endblock %}

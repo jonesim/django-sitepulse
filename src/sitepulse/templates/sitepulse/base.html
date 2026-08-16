@@ -1,0 +1,51 @@
+{% load django_menu_tags %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ title }} &middot; SitePulse</title>
+  {% include "sitepulse/_styles.html" %}
+</head>
+<body class="sp-root">
+<div class="sp-wrap">
+
+  <div class="sp-head">
+    <div class="sp-brand">SitePulse <small>{{ start }} to {{ end }}{% if include_bots %} &middot; bots included{% endif %}</small></div>
+  </div>
+
+  {% menu_content 'tabs' %}
+
+  <div class="sp-range-bar">
+    <span class="sp-range-label">Range</span>
+    {% menu_content 'ranges' %}
+    <span class="sp-range-label">Traffic</span>
+    {% menu_content 'bots' %}
+  </div>
+
+  {% if health.rollup_lag_days is None or health.rollup_lag_days > 0 or health.dropped_7d %}
+    <div class="sp-notice">
+      {% if health.rollup_lag_days is None %}
+        Nothing has been rolled up yet, so every number here is being computed from raw hits.
+        Run <code>manage.py sitepulse_rollup</code>.
+      {% elif health.rollup_lag_days > 0 %}
+        Rollups are {{ health.rollup_lag_days }} day(s) behind &mdash; the numbers are still
+        correct, but they are aggregating raw rows to get there.
+      {% endif %}
+      {% if health.dropped_7d %}
+        {{ health.dropped_7d }} hit(s) were dropped by a full write buffer in the last 7 days.
+      {% endif %}
+      <a href="{% url 'sitepulse:health' %}">Health</a>
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+  <div class="sp-foot">
+    Cookieless by default: visitors are identified by a hash of a salt that is destroyed every
+    24 hours, so &ldquo;visitor-days&rdquo; is what is being counted &mdash; a person visiting on
+    three days counts three times, and there is no way to know otherwise.
+  </div>
+</div>
+</body>
+</html>

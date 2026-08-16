@@ -1,0 +1,205 @@
+{% comment %}
+  Inlined rather than served as a static file so the dashboard works before
+  anyone has run collectstatic. It is an internal tool on a handful of page
+  loads; the caching that costs us is not worth the setup step it saves.
+{% endcomment %}
+<style>
+  .sp-root {
+    color-scheme: light;
+    /* Chart surface and ink */
+    --sp-surface:      #fcfcfb;
+    --sp-plane:        #f9f9f7;
+    --sp-ink:          #0b0b0b;
+    --sp-ink-2:        #52514e;
+    --sp-muted:        #898781;
+    --sp-grid:         #e1e0d9;
+    --sp-axis:         #c3c2b7;
+    --sp-border:       rgba(11, 11, 11, 0.10);
+    /* Categorical slots, in fixed order -- never cycled, never reordered.
+       Validated for CVD separation and contrast against both surfaces. */
+    --sp-series-1:     #2a78d6;
+    --sp-series-2:     #eb6834;
+    --sp-series-3:     #1baf7a;
+    --sp-series-4:     #eda100;
+    --sp-series-5:     #e87ba4;
+    --sp-series-6:     #008300;
+    --sp-series-7:     #4a3aa7;
+    --sp-series-8:     #e34948;
+    /* Status -- reserved, never reused as a series colour */
+    --sp-good:         #0ca30c;
+    --sp-warning:      #fab219;
+    --sp-critical:     #d03b3b;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--sp-plane);
+    color: var(--sp-ink);
+    min-height: 100vh;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .sp-root {
+      color-scheme: dark;
+      --sp-surface:  #1a1a19;
+      --sp-plane:    #0d0d0d;
+      --sp-ink:      #ffffff;
+      --sp-ink-2:    #c3c2b7;
+      --sp-muted:    #898781;
+      --sp-grid:     #2c2c2a;
+      --sp-axis:     #383835;
+      --sp-border:   rgba(255, 255, 255, 0.10);
+      --sp-series-1: #3987e5;
+      --sp-series-2: #d95926;
+      --sp-series-3: #199e70;
+      --sp-series-4: #c98500;
+      --sp-series-5: #d55181;
+      --sp-series-6: #008300;
+      --sp-series-7: #9085e9;
+      --sp-series-8: #e66767;
+    }
+  }
+  :root[data-theme="dark"] .sp-root {
+    color-scheme: dark;
+    --sp-surface:  #1a1a19;
+    --sp-plane:    #0d0d0d;
+    --sp-ink:      #ffffff;
+    --sp-ink-2:    #c3c2b7;
+    --sp-muted:    #898781;
+    --sp-grid:     #2c2c2a;
+    --sp-axis:     #383835;
+    --sp-border:   rgba(255, 255, 255, 0.10);
+    --sp-series-1: #3987e5;
+    --sp-series-2: #d95926;
+    --sp-series-3: #199e70;
+    --sp-series-4: #c98500;
+    --sp-series-5: #d55181;
+    --sp-series-6: #008300;
+    --sp-series-7: #9085e9;
+    --sp-series-8: #e66767;
+  }
+
+  .sp-root * { box-sizing: border-box; }
+  .sp-wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
+
+  /* -- header ------------------------------------------------------- */
+  .sp-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline;
+             justify-content: space-between; margin-bottom: 4px; }
+  .sp-brand { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+  .sp-brand small { font-weight: 400; color: var(--sp-muted); margin-left: 8px; font-size: 13px; }
+  .sp-range-bar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+                  margin: 12px 0 20px; }
+  .sp-range-label { color: var(--sp-ink-2); font-size: 13px; }
+
+  /* django-menus renders bootstrap class names; these are the only styles for
+     them, so the dashboard needs no CSS framework. */
+  .sp-root .nav-tabs { display: flex; flex-wrap: wrap; gap: 2px; list-style: none;
+                       margin: 0; padding: 0; border-bottom: 1px solid var(--sp-border); }
+  .sp-root .nav-item { margin-bottom: -1px; }
+  .sp-root .nav-link { display: block; padding: 9px 14px; color: var(--sp-ink-2);
+                       text-decoration: none; font-size: 14px; border-bottom: 2px solid transparent; }
+  .sp-root .nav-link:hover { color: var(--sp-ink); }
+  .sp-root .nav-link.active { color: var(--sp-ink); font-weight: 600;
+                              border-bottom-color: var(--sp-series-1); }
+  .sp-root .btn-group { display: inline-flex; border: 1px solid var(--sp-border);
+                        border-radius: 8px; overflow: hidden; background: var(--sp-surface); }
+  .sp-root .btn-group .btn { padding: 6px 12px; font-size: 13px; text-decoration: none;
+                             color: var(--sp-ink-2); background: transparent;
+                             border-right: 1px solid var(--sp-border); }
+  .sp-root .btn-group .btn:last-child { border-right: 0; }
+  .sp-root .btn-group .btn:hover { color: var(--sp-ink); background: var(--sp-plane); }
+  .sp-root .btn-group .btn.active { color: var(--sp-ink); font-weight: 600;
+                                    background: var(--sp-plane); }
+
+  /* -- cards, tiles -------------------------------------------------- */
+  .sp-figure, .sp-panel { background: var(--sp-surface); border: 1px solid var(--sp-border);
+                          border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+  .sp-figure-title { font-size: 14px; font-weight: 600; margin: 0 0 2px; letter-spacing: 0; }
+  .sp-figure-note { font-size: 12px; color: var(--sp-muted); margin-bottom: 10px; }
+  .sp-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+               gap: 20px; }
+
+  .sp-stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                 gap: 12px; margin-bottom: 20px; }
+  .sp-stat { background: var(--sp-surface); border: 1px solid var(--sp-border);
+             border-radius: 12px; padding: 14px 16px; }
+  .sp-stat-label { font-size: 12px; color: var(--sp-ink-2); }
+  .sp-stat-value { font-size: 26px; font-weight: 620; letter-spacing: -0.02em; margin-top: 2px; }
+  .sp-stat-sub { font-size: 11px; color: var(--sp-muted); margin-top: 2px; }
+  .sp-stat-spark { margin-top: 8px; }
+  .sp-stat-critical .sp-stat-value { color: var(--sp-critical); }
+
+  /* -- charts -------------------------------------------------------- */
+  /* An SVG scaled below its design width scales its text too, so narrow
+     viewports scroll the chart rather than shrinking its labels to nothing. */
+  .sp-chart { overflow-x: auto; }
+  .sp-svg { width: 100%; height: auto; display: block; overflow: visible; min-width: 520px; }
+  .sp-spark { min-width: 0; }
+  .sp-grid { stroke: var(--sp-grid); stroke-width: 1; }
+  .sp-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .sp-area { opacity: 0.10; stroke: none; }
+  .sp-dot { stroke: var(--sp-surface); stroke-width: 2; }
+  .sp-tick { fill: var(--sp-muted); font-size: 11px;
+             font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+             font-variant-numeric: tabular-nums; }
+  .sp-tick-y { text-anchor: end; }
+  .sp-tick-x { text-anchor: middle; }
+  .sp-axis-title { fill: var(--sp-muted); font-size: 11px;
+                   font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .sp-bar-row:hover .sp-bar { opacity: 0.85; }
+
+  /* Ranked bar lists are HTML, not SVG, so their text never scales with the
+     container -- see the note in charts.bar_list. */
+  .sp-bars { display: grid; gap: 7px; margin-top: 6px; }
+  .sp-bar-row { display: grid; grid-template-columns: minmax(72px, 32%) 1fr;
+                gap: 10px; align-items: center; }
+  .sp-bar-label { font-size: 12px; color: var(--sp-ink-2); text-align: right;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sp-bar-track { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .sp-bar-fill { height: 14px; border-radius: 0 4px 4px 0; flex: 0 0 auto;
+                 background: var(--sp-series-1); }
+  .sp-bar-value { font-size: 12px; font-weight: 600; color: var(--sp-ink);
+                  font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sp-spark-line { fill: none; stroke: var(--sp-series-1); stroke-width: 1.5;
+                   stroke-linejoin: round; }
+
+  /* CSS-only hover: an invisible column per x position lights its crosshair. */
+  .sp-hit { fill: transparent; }
+  .sp-crosshair, .sp-hover-dot { opacity: 0; pointer-events: none; }
+  .sp-crosshair { stroke: var(--sp-axis); stroke-width: 1; }
+  .sp-hover-dot { stroke: var(--sp-surface); stroke-width: 2; }
+  .sp-col:hover .sp-crosshair, .sp-col:hover .sp-hover-dot { opacity: 1; }
+
+  .sp-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 2px 0 10px;
+               font-size: 12px; color: var(--sp-ink-2); }
+  .sp-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .sp-key { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+
+  /* -- tables -------------------------------------------------------- */
+  .sp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .sp-table th { text-align: left; font-weight: 600; color: var(--sp-ink-2);
+                 padding: 8px 10px; border-bottom: 1px solid var(--sp-border); white-space: nowrap; }
+  .sp-table td { padding: 7px 10px; border-bottom: 1px solid var(--sp-grid);
+                 font-variant-numeric: tabular-nums; }
+  /* `anywhere` rather than `break-all`: long URLs still wrap, but a setting name
+     is only broken when it genuinely cannot fit. */
+  .sp-table td:first-child { font-variant-numeric: normal; overflow-wrap: anywhere; }
+  .sp-table tr:last-child td { border-bottom: 0; }
+  .sp-table-wrap { overflow-x: auto; }
+  .sp-table-view { margin-top: 12px; }
+  .sp-table-view summary { font-size: 12px; color: var(--sp-muted); cursor: pointer; }
+  .sp-table-view[open] summary { margin-bottom: 8px; }
+  .sp-empty { color: var(--sp-muted); font-size: 13px; padding: 12px 0; }
+
+  /* -- notices ------------------------------------------------------- */
+  .sp-notice { border: 1px solid var(--sp-border); border-left: 3px solid var(--sp-warning);
+               background: var(--sp-surface); border-radius: 8px; padding: 10px 14px;
+               font-size: 13px; margin-bottom: 12px; color: var(--sp-ink-2); }
+  .sp-notice code { font-size: 12px; }
+  .sp-foot { color: var(--sp-muted); font-size: 12px; margin-top: 28px;
+             border-top: 1px solid var(--sp-border); padding-top: 12px; }
+  .sp-sub { color: var(--sp-ink-2); font-size: 13px; margin: -8px 0 16px; }
+  .sp-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .sp-chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; text-decoration: none;
+             border: 1px solid var(--sp-border); color: var(--sp-ink-2);
+             background: var(--sp-surface); }
+  .sp-chip:hover { color: var(--sp-ink); }
+  .sp-chip.active { border-color: var(--sp-series-1); color: var(--sp-ink); font-weight: 600; }
+</style>

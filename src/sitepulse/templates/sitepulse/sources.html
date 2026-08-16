@@ -1,0 +1,17 @@
+{% extends "sitepulse/base.html" %}
+{% block content %}
+  {{ chart }}
+  <div class="sp-panel">
+    <h2 class="sp-figure-title">Referrers</h2>
+    <div class="sp-table-wrap">{{ referrers }}</div>
+  </div>
+  {% for label, html in campaigns %}
+    <div class="sp-panel">
+      <h2 class="sp-figure-title">Campaign {{ label|lower }}</h2>
+      <div class="sp-table-wrap">{{ html }}</div>
+    </div>
+  {% endfor %}
+  <div class="sp-grid-2">
+    {% for label, html in audience %}{{ html }}{% endfor %}
+  </div>
+{% endblock %}

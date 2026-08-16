@@ -1,0 +1,17 @@
+{% extends "sitepulse/base.html" %}
+{% block content %}
+  <div class="sp-chip-row">
+    {% for label, url, active in grouping_links %}
+      <a class="sp-chip{% if active %} active{% endif %}" href="{{ url }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  {{ chart }}
+  <div class="sp-panel">
+    <h2 class="sp-figure-title">Every page in this range</h2>
+    <div class="sp-figure-note">
+      Entries and exits are per session; bounce rate is the share of sessions that started here
+      and went no further.
+    </div>
+    <div class="sp-table-wrap">{{ table }}</div>
+  </div>
+{% endblock %}

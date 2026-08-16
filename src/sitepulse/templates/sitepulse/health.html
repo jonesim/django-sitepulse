@@ -1,0 +1,69 @@
+{% extends "sitepulse/base.html" %}
+{% block content %}
+
+  {% for message in warnings %}
+    <div class="sp-notice">{{ message }}</div>
+  {% empty %}
+    <div class="sp-notice" style="border-left-color: var(--sp-good)">
+      Collection and aggregation both look healthy.
+    </div>
+  {% endfor %}
+
+  <div class="sp-panel">
+    <h2 class="sp-figure-title">Ingest</h2>
+    <table class="sp-table">
+      <tbody>
+        <tr><td>Hits dropped (7 days)</td><td>{{ health.dropped_7d }}</td></tr>
+        <tr><td>Failed write batches (7 days)</td><td>{{ health.write_errors_7d }}</td></tr>
+        <tr><td>Raw hits today</td><td>{{ health.raw_hits_today }}</td></tr>
+        <tr><td>Oldest raw hit</td><td>{{ health.oldest_raw_hit|default:"none" }}</td></tr>
+        <tr><td>Rolled up through</td><td>{{ health.rolled_up_through|default:"never" }}</td></tr>
+        <tr>
+          <td>Nightly job</td>
+          <td>
+            {% if lock %}running since {{ lock.1 }} on {{ lock.0.host }}{% else %}not running{% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sp-panel">
+    <h2 class="sp-figure-title">Storage</h2>
+    {% if is_postgres %}
+      <div class="sp-figure-note">
+        The raw table is partitioned by month, so retention is a <code>DROP TABLE</code> rather
+        than a long-running delete. The catch-all partition should always be empty.
+      </div>
+      <table class="sp-table">
+        <thead><tr><th scope="col">Partition</th><th scope="col">Month</th></tr></thead>
+        <tbody>
+          {% for name, month in partitions %}
+            <tr><td>{{ name }}</td><td>{{ month|default:"catch-all" }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="sp-figure-note">
+        Not running on PostgreSQL. Collection and reporting work exactly the same, but the raw
+        table is not partitioned, so <code>sitepulse_prune</code> deletes in chunks instead of
+        dropping partitions, and exact percentiles are unavailable.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="sp-panel">
+    <h2 class="sp-figure-title">Settings in force</h2>
+    <div class="sp-table-wrap">
+      <table class="sp-table">
+        <thead><tr><th scope="col">Setting</th><th scope="col">Value</th></tr></thead>
+        <tbody>
+          {% for name, value in settings_rows %}
+            <tr><td>{{ name }}</td><td>{{ value }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

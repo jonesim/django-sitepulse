@@ -1,0 +1,15 @@
+{% extends "sitepulse/base.html" %}
+{% block content %}
+  {{ stats }}
+  {{ chart }}
+  <div class="sp-grid-2">
+    <div class="sp-panel">
+      <h2 class="sp-figure-title">Errors by route</h2>
+      <div class="sp-table-wrap">{{ by_route }}</div>
+    </div>
+    <div class="sp-panel">
+      <h2 class="sp-figure-title">Every status code</h2>
+      <div class="sp-table-wrap">{{ by_status }}</div>
+    </div>
+  </div>
+{% endblock %}
