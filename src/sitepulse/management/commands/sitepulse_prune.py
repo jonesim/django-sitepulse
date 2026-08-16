@@ -33,13 +33,22 @@ class Command(BaseCommand):
         retention = sitepulse_settings.RAW_RETENTION_DAYS
         cutoff = timezone.localdate() - timedelta(days=retention)
         dry_run = options["dry_run"]
+        using = sitepulse_settings.DATABASE_ALIAS
+        start, _ = day_bounds(cutoff)
 
+        # The guard below is about not discarding un-aggregated data -- so it has
+        # to be conditional on there being data to discard. A fresh install has
+        # nothing rolled up *and* nothing old enough to prune, and erroring there
+        # would make the very first nightly run fail on every new project.
+        prunable = Hit.objects.using(using).filter(ts__lt=start).exists()
         boundary = rolled_up_through()
-        if not options["force"]:
+
+        if prunable and not options["force"]:
             if boundary is None:
                 raise CommandError(
-                    "Nothing has been rolled up yet, so pruning would discard raw hits that "
-                    "were never aggregated. Run sitepulse_rollup first, or pass --force."
+                    f"There are raw hits older than {cutoff}, but nothing has been rolled up "
+                    f"yet, so pruning would discard data that was never aggregated. Run "
+                    f"sitepulse_rollup first, or pass --force."
                 )
             if boundary < cutoff:
                 raise CommandError(
@@ -49,6 +58,8 @@ class Command(BaseCommand):
                 )
 
         self.stdout.write(f"Retention is {retention} days; pruning raw hits before {cutoff}.")
+        if not prunable:
+            self.stdout.write("No raw hits are outside the retention window.")
 
         if partitions.is_postgres():
             self._prune_partitions(cutoff, dry_run)
@@ -92,6 +103,8 @@ class Command(BaseCommand):
         using = sitepulse_settings.DATABASE_ALIAS
         queryset = Hit.objects.using(using).filter(ts__lt=start)
         total = queryset.count()
+        if not total:
+            return
         if dry_run:
             self.stdout.write(f"Would delete {total} raw hits.")
             return

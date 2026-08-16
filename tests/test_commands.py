@@ -76,6 +76,22 @@ def test_rollup_rejects_a_nonsense_date():
 # ---------------------------------------------------------------------------
 
 
+def test_a_brand_new_install_can_run_the_nightly_job():
+    """Day one: hits collected today, nothing rolled up yet, nothing old enough
+    to prune. That must not be an error -- it is every new project's first cron
+    run, and failing it would email a traceback to everyone who installs this."""
+    make_hit(ts=at(timezone.localdate()))
+    output = run("sitepulse_nightly")
+    assert "No raw hits are outside the retention window" in output
+
+
+def test_prune_is_quiet_when_there_is_nothing_to_prune():
+    run("sitepulse_prune")   # completely empty database
+    make_hit(ts=at(timezone.localdate()))
+    output = run("sitepulse_prune")
+    assert "No raw hits are outside the retention window" in output
+
+
 @override_settings(SITEPULSE={"SYNCHRONOUS_WRITES": True, "RAW_RETENTION_DAYS": 30})
 def test_prune_refuses_to_discard_days_the_rollups_have_not_covered():
     make_hit(ts=at(timezone.localdate() - timedelta(days=60)))
